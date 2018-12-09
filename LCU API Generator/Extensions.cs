@@ -23,5 +23,36 @@ namespace LCU_API_Generator
                 }
             }
         }
+        
+        public static string Prettify(this string str, bool firstUpper = false)
+        {
+            var name = "";
+
+            bool upper = firstUpper;
+            for (int i = 0; i < str.Length; i++)
+            {
+                char c = str[i];
+
+                if (upper)
+                {
+                    upper = false;
+                    c = char.ToUpper(c);
+                }
+
+                if (c == '-')
+                {
+                    upper = true;
+                    continue;
+                }
+
+                name += c;
+            }
+
+            if (Keywords.Contains(name))
+                name = "@" + name;
+
+            return name;
+        }
+
     }
 }

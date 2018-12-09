@@ -113,7 +113,7 @@ namespace LCU_API_Generator
 
                 if ((parts.Length > 1 || o.Tags.Contains("Plugins")) && o.PathName != "/{plugin}/assets/{path}")
                 {
-                    return Prettify(parts[0]);
+                    return parts[0].Prettify(true);
                 }
 
                 return "BuiltIn";
@@ -190,11 +190,11 @@ namespace {@namespace}
                 foreach (var param in path.Parameters)
                 {
                     if (param.Description != null)
-                        builder.AppendLine($"/// <param name=\"{Prettify(param.Name, false)}\">{param.Description}</param>", 2);
+                        builder.AppendLine($"/// <param name=\"{param.Name.Prettify()}\">{param.Description}</param>", 2);
                 }
 
                 builder.Append(@$"public static Task{returnType} {path.OperationID}(", 2)
-                       .AppendJoin(", ", path.Parameters.Select(o => $"[Parameter(\"{o.Name}\", \"{o.In}\")] {GetCSType(o.Schema ?? o, true, true)} {Prettify(o.Name, false)}"))
+                       .AppendJoin(", ", path.Parameters.Select(o => $"[Parameter(\"{o.Name}\", \"{o.In}\")] {GetCSType(o.Schema ?? o, true, true)} {o.Name.Prettify()}"))
                        .AppendLine(")")
                        .Append("=> ", 3);
 
@@ -203,19 +203,19 @@ namespace {@namespace}
 
                 foreach (var item in path.Parameters.Where(o => o.In == "path"))
                 {
-                    pathStr = pathStr.Replace(item.Name, Prettify(item.Name, false));
+                    pathStr = pathStr.Replace(item.Name, item.Name.Prettify());
                 }
 
                 if (path.Parameters.Any(o => o.In == "query"))
                 {
                     pathStr += "?" + string.Join("&", path.Parameters
                         .Where(o => o.In == "query")
-                        .Select(o => $"{o.Name}={{System.Net.WebUtility.UrlEncode({Prettify(o.Name, false)}.ToString())}}"));
+                        .Select(o => $"{o.Name}={{System.Net.WebUtility.UrlEncode({o.Name.Prettify()}.ToString())}}"));
                 }
 
                 if (path.Parameters.Any(o => o.In == "body"))
                 {
-                    body = ", " + Prettify(path.Parameters.Single(o => o.In == "body").Name, false);
+                    body = ", " + path.Parameters.Single(o => o.In == "body").Name.Prettify();
                 }
                 
                 builder.AppendLine($"Sender.Request{returnType}(\"{path.Method}\", $\"{pathStr}\"{body});");
@@ -276,36 +276,6 @@ namespace {@namespace}
             builder.AppendLine("}", 1).AppendLine("}");
 
             return builder.ToString();
-        }
-
-        private static string Prettify(string str, bool firstUpper = true)
-        {
-            var name = "";
-
-            bool upper = firstUpper;
-            for (int i = 0; i < str.Length; i++)
-            {
-                char c = str[i];
-
-                if (upper)
-                {
-                    upper = false;
-                    c = char.ToUpper(c);
-                }
-
-                if (c == '-')
-                {
-                    upper = true;
-                    continue;
-                }
-
-                name += c;
-            }
-
-            if (Keywords.Contains(name))
-                name = "@" + name;
-
-            return name;
         }
 
         private static Path.Parameter ResolveReferences(Path.Parameter parameter, IEnumerable<Definition> definitions, ref int counter)
