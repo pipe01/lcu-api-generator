@@ -177,8 +177,6 @@ namespace {@namespace}
 
             foreach (var path in pathGroup)
             {
-                bool flag = path.OperationID == "GetLolRankedV2Tiers";
-                
                 var response = path.Responses.First().Value;
                 var returnType = response.Schema == null ? null : $"<{GetCSType(response.Schema)}>";
 
@@ -223,7 +221,7 @@ namespace {@namespace}
                 builder.AppendLine($"Sender.Request{returnType}(\"{path.Method}\", $\"{pathStr}\"{body});");
             }
 
-            builder.AppendLine("    }").AppendLine("}");
+            builder.AppendLine("}", 1).AppendLine("}");
 
             return builder.ToString();
         }
