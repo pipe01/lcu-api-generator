@@ -7,7 +7,7 @@ namespace LCU_API_Generator
 {
     internal static class Extensions
     {
-        private static string[] Keywords = new[]
+        private static readonly string[] Keywords = new[]
            {
             "bool", "byte", "sbyte", "short", "ushort", "int", "uint", "long", "ulong", "double", "float", "decimal",
             "string", "char", "void", "object", "typeof", "sizeof", "null", "true", "false", "if", "else", "while", "for", "foreach", "do", "switch",
@@ -16,8 +16,7 @@ namespace LCU_API_Generator
             "event", "extern", "ref", "out", "in", "is", "as", "params", "__arglist", "__makeref", "__reftype", "__refvalue", "this", "base",
             "namespace", "using", "class", "struct", "interface", "enum", "delegate", "checked", "unchecked", "unsafe", "operator", "implicit", "explicit"
         };
-
-
+        
         public static StringBuilder AppendLine(this StringBuilder builder, string str, int level)
             => builder.AppendLine($"{new string(' ', level * 4)}{str}");
 
