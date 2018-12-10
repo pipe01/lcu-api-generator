@@ -30,6 +30,8 @@ namespace {config.InterfaceNamespace}
                 var response = path.Responses.First().Value;
                 var returnType = response.Schema == null ? null : $"<{response.Schema.GetCSType()}>";
 
+                path.Parameters = path.Parameters.OrderByDescending(o => o.Required).ToArray();
+
                 if (path.Summary != null)
                 {
                     builder.AppendLine("/// <summary>", 2)
@@ -44,7 +46,7 @@ namespace {config.InterfaceNamespace}
                 }
 
                 builder.Append(@$"public static Task{returnType} {path.OperationID}(", 2)
-                       .AppendJoin(", ", path.Parameters.Select(o => $"[Parameter(\"{o.Name}\", \"{o.In}\")] {(o.Schema ?? o).GetCSType(true, true)} {o.Name.Prettify()}"))
+                       .AppendJoin(", ", path.Parameters.Select(o => $"[Parameter(\"{o.Name}\", \"{o.In}\")] {(o.Schema ?? o).GetCSType(true, true)} {o.Name.Prettify()}{(!o.Required ? " = default": "")}"))
                        .AppendLine(")")
                        .Append("=> ", 3);
 
@@ -60,7 +62,11 @@ namespace {config.InterfaceNamespace}
                 {
                     pathStr += "?" + string.Join("&", path.Parameters
                         .Where(o => o.In == "query")
-                        .Select(o => $"{o.Name}={{System.Net.WebUtility.UrlEncode({o.Name.Prettify()}.ToString())}}"));
+                        .Select(o =>
+                        {
+                            var str = $"{o.Name}={{System.Net.WebUtility.UrlEncode({o.Name.Prettify()}.ToString())}}";
+                            return o.Required ? str : $"{{(o.Name.Prettify() != default ? $\"{str}\" : null)}}";
+                        }));
                 }
 
                 if (path.Parameters.Any(o => o.In == "body"))
