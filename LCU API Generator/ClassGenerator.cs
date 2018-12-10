@@ -13,7 +13,7 @@ namespace LCU_API_Generator
 
             if (config.ModelNamespace != config.InterfaceNamespace)
             {
-                builder.Append($"using {config.ModelNamespace};");
+                builder.AppendLine($"using {config.ModelNamespace};");
             }
 
             builder.Append(@$"using System.Threading.Tasks;
