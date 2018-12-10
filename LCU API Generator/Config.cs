@@ -17,8 +17,11 @@ namespace LCU_API_Generator
         [JsonProperty("interfaceNamespace")]
         public string InterfaceNamespace { get; set; } = "MyNamespace.Interfaces";
 
-        [JsonProperty("outFolder")]
-        public string OutFolder { get; set; } = "./out";
+        [JsonProperty("interfaceOutFolder")]
+        public string InterfaceOutFolder { get; set; } = "./out/Interfaces";
+
+        [JsonProperty("modelOutFolder")]
+        public string ModelOutFolder { get; set; } = "./out/Models";
 
         [JsonProperty("classVisibility")]
         public string ClassVisibility { get; set; } = "public";

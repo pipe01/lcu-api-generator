@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using IOPath = System.IO.Path;
 
 namespace LCU_API_Generator
 {
@@ -17,6 +18,13 @@ namespace LCU_API_Generator
 
             var config = Config.Load(configPath);
 
+            if (!File.Exists(config.SwaggerFile))
+            {
+                Console.WriteLine("Swagger file at '{0}' not found", IOPath.GetFullPath(config.SwaggerFile));
+                Console.ReadKey(true);
+                return;
+            }
+            
             Console.WriteLine("Reading file at " + config.SwaggerFile);
 
             JObject json;
@@ -93,6 +101,7 @@ namespace LCU_API_Generator
             Console.Write("Writing definitions models: ");
             WriteModels(definitions, config);
 
+            Console.WriteLine();
             Console.WriteLine("Done!");
             Console.ReadKey(true);
         }
@@ -111,10 +120,8 @@ namespace LCU_API_Generator
                 return "BuiltIn";
             });
             
-            var path = "../../../out/Interfaces";
-
-            if (!Directory.Exists(path))
-                Directory.CreateDirectory(path);
+            if (!Directory.Exists(config.InterfaceOutFolder))
+                Directory.CreateDirectory(config.InterfaceOutFolder);
 
             int i = 0, total = groups.Count();
             var pos = (Console.CursorLeft, Console.CursorTop);
@@ -123,7 +130,7 @@ namespace LCU_API_Generator
                 Console.SetCursorPosition(pos.CursorLeft, pos.CursorTop);
                 Console.WriteLine("{0}/{1}", i++, total);
                 
-                File.WriteAllText($"{path}/{item.Key}.cs", ClassGenerator.Generate(item, config));
+                File.WriteAllText(IOPath.Combine(config.InterfaceOutFolder, item.Key + ".cs"), ClassGenerator.Generate(item, config));
             }
 
             Console.SetCursorPosition(pos.CursorLeft, pos.CursorTop);
@@ -132,10 +139,8 @@ namespace LCU_API_Generator
 
         private static void WriteModels(Definition[] definitions, Config config)
         {
-            var path = "../../../out/Models";
-
-            if (!Directory.Exists(path))
-                Directory.CreateDirectory(path);
+            if (!Directory.Exists(config.ModelOutFolder))
+                Directory.CreateDirectory(config.ModelOutFolder);
 
             int i = 0;
             var pos = (Console.CursorLeft, Console.CursorTop);
@@ -144,7 +149,7 @@ namespace LCU_API_Generator
                 Console.SetCursorPosition(pos.CursorLeft, pos.CursorTop);
                 Console.WriteLine("{0}/{1}", i++, definitions.Length);
 
-                File.WriteAllText($"{path}/{item.Name}.cs", ClassGenerator.Generate(item, config));
+                File.WriteAllText(IOPath.Combine(config.ModelOutFolder, item.Name + ".cs"), ClassGenerator.Generate(item, config));
             }
 
             Console.SetCursorPosition(pos.CursorLeft, pos.CursorTop);
