@@ -18,5 +18,30 @@ namespace LCU_API_Generator
 
         [JsonProperty("$ref")]
         public string Reference;
+
+        public string GetCSType(bool forPath = false, bool isParameter = false)
+        {
+            switch (this.Type)
+            {
+                case "array":
+                    return (this.Items.Name ?? new Definition
+                    {
+                        Type = this.Items.Type,
+                        Format = this.Items.Format
+                    }.GetCSType()) + "[]";
+                case "integer" when this.Format == "int64":
+                    return "long";
+                case "integer":
+                    return "int";
+                case "number":
+                    return "float";
+                case "boolean":
+                    return "bool";
+                case "object" when isParameter && this.Name != null:
+                    return this.Name;
+            }
+
+            return forPath ? this.Type : (this.Name ?? this.Type);
+        }
     }
 }

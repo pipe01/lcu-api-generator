@@ -168,7 +168,7 @@ namespace {@namespace}
             foreach (var path in pathGroup)
             {
                 var response = path.Responses.First().Value;
-                var returnType = response.Schema == null ? null : $"<{GetCSType(response.Schema)}>";
+                var returnType = response.Schema == null ? null : $"<{response.Schema.GetCSType()}>";
 
                 if (path.Summary != null)
                 {
@@ -184,7 +184,7 @@ namespace {@namespace}
                 }
 
                 builder.Append(@$"public static Task{returnType} {path.OperationID}(", 2)
-                       .AppendJoin(", ", path.Parameters.Select(o => $"[Parameter(\"{o.Name}\", \"{o.In}\")] {GetCSType(o.Schema ?? o, true, true)} {o.Name.Prettify()}"))
+                       .AppendJoin(", ", path.Parameters.Select(o => $"[Parameter(\"{o.Name}\", \"{o.In}\")] {(o.Schema ?? o).GetCSType(true, true)} {o.Name.Prettify()}"))
                        .AppendLine(")")
                        .Append("=> ", 3);
 
@@ -249,7 +249,7 @@ namespace {@namespace}
                         name += "2";
 
                     builder.AppendLine($"[JsonProperty(\"{item.Key}\")]", 2)
-                           .AppendLine($"public {GetCSType(item.Value)} {name}{(properties ? " { get; set; }" : ";")}", 2);
+                           .AppendLine($"public {item.Value.GetCSType()} {name}{(properties ? " { get; set; }" : ";")}", 2);
                 }
             }
             else
@@ -321,31 +321,6 @@ namespace {@namespace}
             {
                 return definitions.Single(o => o.Name == fullName.Split('/').Last());
             }
-        }
-
-        private static string GetCSType(Definition definition, bool forPath = false, bool isParameter = false)
-        {
-            switch (definition.Type)
-            {
-                case "array":
-                    return (definition.Items.Name ?? GetCSType(new Definition
-                    {
-                        Type = definition.Items.Type,
-                        Format = definition.Items.Format
-                    })) + "[]";
-                case "integer" when definition.Format == "int64":
-                    return "long";
-                case "integer":
-                    return "int";
-                case "number":
-                    return "float";
-                case "boolean":
-                    return "bool";
-                case "object" when isParameter && definition.Name != null:
-                    return definition.Name;
-            }
-            
-            return forPath ? definition.Type : (definition.Name ?? definition.Type);
         }
     }
 }
