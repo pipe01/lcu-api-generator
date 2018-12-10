@@ -17,7 +17,7 @@ namespace LCU_API_Generator
             }
 
             builder.Append(@$"using System.Threading.Tasks;
-using static {config.InterfaceNamespace}.GenerationUtils;
+using static {config.GenerationUtilsFullName};
 
 namespace {config.InterfaceNamespace}
 {{
