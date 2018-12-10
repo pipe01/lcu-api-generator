@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LCU_API_Generator
+namespace MyNamespace
 {
     [AttributeUsage(AttributeTargets.Parameter, Inherited = false, AllowMultiple = false)]
     sealed class ParameterAttribute : Attribute

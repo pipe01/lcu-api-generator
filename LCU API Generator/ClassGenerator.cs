@@ -65,7 +65,7 @@ namespace {config.InterfaceNamespace}
                         .Select(o =>
                         {
                             var str = $"{o.Name}={{System.Net.WebUtility.UrlEncode({o.Name.Prettify()}.ToString())}}";
-                            return o.Required ? str : $"{{(o.Name.Prettify() != default ? $\"{str}\" : null)}}";
+                            return o.Required ? str : $"{{({o.Name.Prettify()} != default ? $\"{str}\" : null)}}";
                         }));
                 }
 
