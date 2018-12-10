@@ -91,7 +91,6 @@ namespace LCU_API_Generator
             WritePaths(paths, config);
 
             Console.Write("Writing definitions models: ");
-            Console.ReadKey(true);
             WriteModels(definitions, config);
 
             Console.WriteLine("Done!");
