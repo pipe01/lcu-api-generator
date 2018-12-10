@@ -8,6 +8,9 @@ namespace LCU_API_Generator
 {
     public class Config
     {
+        [JsonProperty]
+        public string SwaggerFile { get; set; } = "./swagger.json";
+
         [JsonProperty("modelNamespace")]
         public string ModelNamespace { get; set; } = "MyNamespace.Models";
 

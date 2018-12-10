@@ -13,12 +13,15 @@ namespace LCU_API_Generator
     {
         static async Task Main(string[] args)
         {
-            string path = args.Length == 1 ? args[0] : "swagger.json";
-            Console.WriteLine("Reading file at " + path);
+            string configPath = args.Length == 1 ? args[0] : "config.json";
+
+            var config = Config.Load(configPath);
+
+            Console.WriteLine("Reading file at " + config.SwaggerFile);
 
             JObject json;
 
-            using (var fileReader = File.OpenText(path))
+            using (var fileReader = File.OpenText(config.SwaggerFile))
             {
                 json = await JObject.LoadAsync(new JsonTextReader(fileReader));
             }
@@ -85,17 +88,17 @@ namespace LCU_API_Generator
             Console.WriteLine("Resolved {0} model references", refs);
 
             Console.Write("Writing path controllers: ");
-            WritePaths(paths);
+            WritePaths(paths, config);
 
             Console.Write("Writing definitions models: ");
             Console.ReadKey(true);
-            WriteModels(definitions);
+            WriteModels(definitions, config);
 
             Console.WriteLine("Done!");
             Console.ReadKey(true);
         }
 
-        private static void WritePaths(Path[] paths)
+        private static void WritePaths(Path[] paths, Config config)
         {
             var groups = paths.GroupBy(o =>
             {
@@ -121,14 +124,14 @@ namespace LCU_API_Generator
                 Console.SetCursorPosition(pos.CursorLeft, pos.CursorTop);
                 Console.WriteLine("{0}/{1}", i++, total);
                 
-                File.WriteAllText($"{path}/{item.Key}.cs", ClassGenerator.Generate(item, "LCU_API_Generator"));
+                File.WriteAllText($"{path}/{item.Key}.cs", ClassGenerator.Generate(item, config));
             }
 
             Console.SetCursorPosition(pos.CursorLeft, pos.CursorTop);
             Console.WriteLine("done         ");
         }
 
-        private static void WriteModels(Definition[] definitions)
+        private static void WriteModels(Definition[] definitions, Config config)
         {
             var path = "../../../out/Models";
 
@@ -142,7 +145,7 @@ namespace LCU_API_Generator
                 Console.SetCursorPosition(pos.CursorLeft, pos.CursorTop);
                 Console.WriteLine("{0}/{1}", i++, definitions.Length);
 
-                File.WriteAllText($"{path}/{item.Name}.cs", ClassGenerator.Generate(item, "LCU_API_Generator"));
+                File.WriteAllText($"{path}/{item.Name}.cs", ClassGenerator.Generate(item, config));
             }
 
             Console.SetCursorPosition(pos.CursorLeft, pos.CursorTop);

@@ -5,19 +5,23 @@ namespace LCU_API_Generator
 {
     public static class ClassGenerator
     {
-        public static string Generate(IGrouping<string, Path> pathGroup, string @namespace, string classModifier = "public",
-            bool properties = true)
+        public static string Generate(IGrouping<string, Path> pathGroup, Config config)
         {
             var builder = new StringBuilder();
 
             string name = pathGroup.Key == "System" ? "SSystem" : pathGroup.Key;
 
-            builder.Append(@$"using System.Threading.Tasks;
-using static {@namespace}.GenerationUtils;
+            if (config.ModelNamespace != config.InterfaceNamespace)
+            {
+                builder.Append($"using {config.ModelNamespace};");
+            }
 
-namespace {@namespace}
+            builder.Append(@$"using System.Threading.Tasks;
+using static {config.InterfaceNamespace}.GenerationUtils;
+
+namespace {config.InterfaceNamespace}
 {{
-    {classModifier} static class {name}
+    {config.ClassVisibility} static class {name}
     {{
 ");
 
@@ -72,8 +76,7 @@ namespace {@namespace}
             return builder.ToString();
         }
 
-        public static string Generate(Definition definition, string @namespace, string classModifier = "public",
-            bool properties = true)
+        public static string Generate(Definition definition, Config config)
         {
             var builder = new StringBuilder();
 
@@ -81,9 +84,9 @@ namespace {@namespace}
 
             builder.Append(@$"using Newtonsoft.Json;
 
-namespace {@namespace}
+namespace {config.ModelNamespace}
 {{{(objectType == "class" ? "\n    [JsonObject]" : "")}
-    {classModifier} {objectType} {definition.Name}
+    {config.ClassVisibility} {objectType} {definition.Name}
     {{
 ");
 
@@ -105,7 +108,7 @@ namespace {@namespace}
                         name += "2";
 
                     builder.AppendLine($"[JsonProperty(\"{item.Key}\")]", 2)
-                           .AppendLine($"public {item.Value.GetCSType()} {name}{(properties ? " { get; set; }" : ";")}", 2);
+                           .AppendLine($"public {item.Value.GetCSType()} {name}{(config.UseProperties ? " { get; set; }" : ";")}", 2);
                 }
             }
             else
