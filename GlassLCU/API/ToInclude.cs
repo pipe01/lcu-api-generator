@@ -24,6 +24,17 @@ namespace GlassLCU.API
         }
     }
 
+    [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
+    sealed class EndpointAttribute : Attribute
+    {
+        public string URL { get; }
+
+        public EndpointAttribute(string url)
+        {
+            this.URL = url;
+        }
+    }
+
     public interface ISender
     {
         Task<T> Request<T>(string method, string path, object body = null);

@@ -11,15 +11,8 @@ using IOPath = System.IO.Path;
 
 namespace LCU_API_Generator
 {
-    public static class Test
-    {
-
-    }
-
     class Program
     {
-        static void Met(Type type) { }
-
         static async Task Main(string[] args)
         {
             string configPath = args.Length == 1 ? args[0] : "config.json";

@@ -1,4 +1,6 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
+using System.Reflection;
 using System.Text;
 
 namespace LCU_API_Generator
@@ -49,8 +51,11 @@ namespace {config.InterfaceNamespace}
                     }
                 }
 
+                if (config.AddAttributeToMethods)
+                    builder.AppendLine($"[Endpoint(\"{path.PathName}\")]", 2);
+
                 builder.Append($@"public static Task{returnType} {path.OperationID}(", 2)
-                       .AppendJoin(", ", path.Parameters.Select(o => $"[Parameter(\"{o.Name}\", \"{o.In}\")] {(o.Schema ?? o).GetCSType(true, true)} {o.Name.Prettify()}{(!o.Required ? " = default": "")}"))
+                       .AppendJoin(", ", path.Parameters.Select(GenerateParam))
                        .AppendLine(")")
                        .Append("=> ", 3);
 
@@ -81,10 +86,25 @@ namespace {config.InterfaceNamespace}
                 builder.AppendLine($"Sender.Request{returnType}(\"{path.Method}\", $\"{pathStr}\"{body});");
             }
 
+            if (config.AddAttributeToMethods)
+            {
+                builder.AppendLine($@"
+        public static string GetURL(string methodName)
+        {{
+            return typeof({name}).GetMethod(methodName).GetCustomAttribute<EndpointAttribute>().URL;
+        }}");
+            }
+
             builder.AppendLine("}", 1)
                    .AppendLine("}");
 
             return builder.ToString();
+
+            string GenerateParam(Path.Parameter o)
+            {
+                return (config.AddAttributeToParameters ? $"[Parameter(\"{o.Name}\", \"{o.In}\")] " : "") +
+                    $"{(o.Schema ?? o).GetCSType(true, true)} {o.Name.Prettify()}{(!o.Required ? " = default" : "")}";
+            }
         }
 
         public static string Generate(Definition definition, Config config)

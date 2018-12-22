@@ -50,6 +50,12 @@ namespace LCU_API_Generator
         [JsonProperty("generateXmlDocs")]
         public bool GenerateXmlDocs { get; set; } = true;
 
+        [JsonProperty("addAttributeToParameters")]
+        public bool AddAttributeToParameters { get; set; } = true;
+
+        [JsonProperty("addAttributeToMethods")]
+        public bool AddAttributeToMethods { get; set; } = true;
+        
         private Config()
         {
         }
