@@ -11,6 +11,9 @@ namespace LCU_API_Generator
         [JsonProperty("swaggerFile")]
         public string SwaggerFile { get; set; } = "./swagger.json";
 
+        [JsonProperty("getSwaggerFromClient")]
+        public bool GetSwaggerFromClient { get; set; }
+
         [JsonProperty("modelNamespace")]
         public string ModelNamespace { get; set; } = "MyNamespace.Models";
 

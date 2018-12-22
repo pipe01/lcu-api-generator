@@ -16,7 +16,7 @@ namespace LCU_API_Generator
                 builder.AppendLine($"using {config.ModelNamespace};");
             }
 
-            builder.Append(@$"using System.Threading.Tasks;
+            builder.Append($@"using System.Threading.Tasks;
 using static {config.GenerationUtilsFullName};
 
 namespace {config.InterfaceNamespace}
@@ -45,7 +45,7 @@ namespace {config.InterfaceNamespace}
                         builder.AppendLine($"/// <param name=\"{param.Name.Prettify()}\">{param.Description}</param>", 2);
                 }
 
-                builder.Append(@$"public static Task{returnType} {path.OperationID}(", 2)
+                builder.Append($@"public static Task{returnType} {path.OperationID}(", 2)
                        .AppendJoin(", ", path.Parameters.Select(o => $"[Parameter(\"{o.Name}\", \"{o.In}\")] {(o.Schema ?? o).GetCSType(true, true)} {o.Name.Prettify()}{(!o.Required ? " = default": "")}"))
                        .AppendLine(")")
                        .Append("=> ", 3);
@@ -88,7 +88,7 @@ namespace {config.InterfaceNamespace}
 
             string objectType = definition.Enum != null ? "enum" : "class";
 
-            builder.Append(@$"using Newtonsoft.Json;
+            builder.Append($@"using Newtonsoft.Json;
 
 namespace {config.ModelNamespace}
 {{{(objectType == "class" ? "\n    [JsonObject]" : "")}

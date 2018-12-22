@@ -1,0 +1,19 @@
+using Newtonsoft.Json;
+
+namespace GlassLCU.API.Models
+{
+    [JsonObject]
+    public class LolChatGroupResource
+    {
+        [JsonProperty("collapsed")]
+        public bool Collapsed { get; set; }
+        [JsonProperty("id")]
+        public int Id { get; set; }
+        [JsonProperty("isMetaGroup")]
+        public bool IsMetaGroup { get; set; }
+        [JsonProperty("name")]
+        public string Name { get; set; }
+        [JsonProperty("priority")]
+        public int Priority { get; set; }
+    }
+}

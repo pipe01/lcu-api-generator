@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using GlassLCU;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -17,22 +18,39 @@ namespace LCU_API_Generator
             string configPath = args.Length == 1 ? args[0] : "config.json";
 
             var config = Config.Load(configPath);
+            string swagger;
 
-            if (!File.Exists(config.SwaggerFile))
+            if (config.GetSwaggerFromClient)
             {
-                Console.WriteLine("Swagger file at '{0}' not found", IOPath.GetFullPath(config.SwaggerFile));
-                Console.ReadKey(true);
-                return;
+                try
+                {
+                    swagger = await GetSwaggerFromClient();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Failed to get swagger file:");
+                    Console.WriteLine(ex);
+                    Console.ReadKey(true);
+                    return;
+                }
+            }
+            else
+            {
+                if (File.Exists(config.SwaggerFile))
+                {
+                    Console.WriteLine("Reading file at " + config.SwaggerFile);
+
+                    swagger = await File.ReadAllTextAsync(config.SwaggerFile);
+                }
+                else
+                {
+                    Console.WriteLine("Swagger file at '{0}' not found", IOPath.GetFullPath(config.SwaggerFile));
+                    Console.ReadKey(true);
+                    return;
+                }
             }
             
-            Console.WriteLine("Reading file at " + config.SwaggerFile);
-
-            JObject json;
-
-            using (var fileReader = File.OpenText(config.SwaggerFile))
-            {
-                json = await JObject.LoadAsync(new JsonTextReader(fileReader));
-            }
+            var json = JObject.Parse(swagger);
 
             var jdefinitions = (JObject)json["definitions"];
             Console.WriteLine("Found {0} definitions", jdefinitions.Count);
@@ -104,6 +122,23 @@ namespace LCU_API_Generator
             Console.WriteLine();
             Console.WriteLine("Done!");
             Console.ReadKey(true);
+        }
+
+        private static async Task<string> GetSwaggerFromClient()
+        {
+            Console.WriteLine("Getting swagger file from LCU");
+
+            var client = new LeagueClient();
+            var tcs = new TaskCompletionSource<bool>();
+
+            client.BeginTryInit(InitializeMethod.Lockfile, taskCompletionSource: tcs);
+
+            if (await tcs.Task)
+            {
+                return await client.GetSwaggerJson();
+            }
+
+            return null;
         }
 
         private static void WritePaths(Path[] paths, Config config)
