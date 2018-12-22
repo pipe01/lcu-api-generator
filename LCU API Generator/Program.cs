@@ -13,12 +13,17 @@ namespace LCU_API_Generator
 {
     class Program
     {
+        private static IList<Definition> ReferencedDefinitions = new List<Definition>();
+
         static async Task Main(string[] args)
         {
             string configPath = args.Length == 1 ? args[0] : "config.json";
 
             var config = Config.Load(configPath);
             config.Save(configPath);
+
+            if (args.Contains("-client"))
+                config.GetSwaggerFromClient = true;
 
             string swagger;
 
@@ -73,10 +78,7 @@ namespace LCU_API_Generator
                 def.Name = prop.Name;
 
                 return def;
-            })
-            .Where(o => (config.IncludeModels == null || config.IncludeEndpoints.Contains(o.Name))
-                     && (config.ExcludeModels == null || !config.ExcludeEndpoints.Contains(o.Name)))
-            .ToArray();
+            }).ToArray();
 
             var paths = jpaths.Children().SelectMany(o =>
             {
@@ -93,8 +95,19 @@ namespace LCU_API_Generator
                     return p;
                 }).ToArray();
             })
-            .Where(o => (config.IncludeEndpoints == null || config.IncludeEndpoints.Contains(o.PathName))
-                     && (config.ExcludeEndpoints == null || !config.ExcludeEndpoints.Contains(o.PathName)))
+            .GroupBy(o =>
+            {
+                string[] parts = o.PathName.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+
+                if ((parts.Length > 1 || o.Tags.Contains("Plugins")) && o.PathName != "/{plugin}/assets/{path}")
+                {
+                    return parts[0].Prettify(true);
+                }
+
+                return "BuiltIn";
+            })
+            .Where(o => (config.IncludeEndpoints == null || config.IncludeEndpoints.Contains(o.Key))
+                     && (config.ExcludeEndpoints == null || !config.ExcludeEndpoints.Contains(o.Key)))
             .ToArray();
 
             int refs = 0;
@@ -103,7 +116,9 @@ namespace LCU_API_Generator
                 ResolveReferences(item, definitions, ref refs);
             }
 
-            foreach (var item in paths)
+            ReferencedDefinitions.Clear();
+
+            foreach (var item in paths.SelectMany(o => o))
             {
                 item.Parameters = item.Parameters.DistinctBy(o => o.Name).ToArray();
 
@@ -111,7 +126,7 @@ namespace LCU_API_Generator
                 {
                     ResolveReferences(param, definitions, ref refs);
                 }
-                
+
                 foreach (var resp in item.Responses)
                 {
                     if (resp.Value.Schema != null)
@@ -121,11 +136,16 @@ namespace LCU_API_Generator
 
             Console.WriteLine("Resolved {0} model references", refs);
 
+            ReferencedDefinitions = ReferencedDefinitions
+                .DistinctBy(o => o.Name)
+                .Where(o => definitions.Any(p => p.Name == o.Name))
+                .ToList();
+
             Console.Write("Writing path controllers: ");
             WritePaths(paths, config);
 
             Console.Write("Writing definition models: ");
-            WriteModels(definitions, config);
+            WriteModels(ReferencedDefinitions, config);
 
             Console.WriteLine();
             Console.WriteLine("Done!");
@@ -149,20 +169,8 @@ namespace LCU_API_Generator
             return null;
         }
 
-        private static void WritePaths(IEnumerable<Path> paths, Config config)
+        private static void WritePaths(IEnumerable<IGrouping<string, Path>> groups, Config config)
         {
-            var groups = paths.GroupBy(o =>
-            {
-                string[] parts = o.PathName.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
-
-                if ((parts.Length > 1 || o.Tags.Contains("Plugins")) && o.PathName != "/{plugin}/assets/{path}")
-                {
-                    return parts[0].Prettify(true);
-                }
-
-                return "BuiltIn";
-            });
-            
             if (!Directory.Exists(config.InterfaceOutFolder))
                 Directory.CreateDirectory(config.InterfaceOutFolder);
 
@@ -247,6 +255,7 @@ namespace LCU_API_Generator
                 }
             }
 
+            ReferencedDefinitions.Add(definition);
             return definition;
             
             Definition GetDefinition(string fullName)

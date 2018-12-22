@@ -1,6 +1,4 @@
-﻿using System;
-using System.Linq;
-using System.Reflection;
+﻿using System.Linq;
 using System.Text;
 
 namespace LCU_API_Generator
@@ -23,7 +21,7 @@ namespace LCU_API_Generator
 
             builder.Append($@"using System.Threading.Tasks;
 using static {config.GenerationUtilsFullName};
-
+{(config.AddAttributeToMethods ? "using System.Reflection;\n" : "")}
 namespace {config.InterfaceNamespace}
 {{
     {config.ClassVisibility} static class {name}
