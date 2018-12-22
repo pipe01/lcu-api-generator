@@ -32,17 +32,21 @@ namespace {config.InterfaceNamespace}
 
                 path.Parameters = path.Parameters.OrderByDescending(o => o.Required).ToArray();
 
-                if (path.Summary != null)
+                if (config.GenerateXmlDocs)
                 {
-                    builder.AppendLine("/// <summary>", 2)
-                           .AppendLine("/// " + path.Summary, 2)
-                           .AppendLine("/// </summary>", 2);
-                }
+                    builder.AppendLine("/// <summary>", 2);
 
-                foreach (var param in path.Parameters)
-                {
-                    if (param.Description != null)
-                        builder.AppendLine($"/// <param name=\"{param.Name.Prettify()}\">{param.Description}</param>", 2);
+                    if (path.Summary != null)
+                        builder.AppendLine("/// " + path.Summary, 2);
+
+                    builder.AppendLine($"/// <para>{path.Method.ToUpper()} {path.PathName}</para>", 2);
+                    builder.AppendLine("/// </summary>", 2);
+
+                    foreach (var param in path.Parameters)
+                    {
+                        if (param.Description != null)
+                            builder.AppendLine($"/// <param name=\"{param.Name.Prettify()}\">{param.Description}</param>", 2);
+                    }
                 }
 
                 builder.Append($@"public static Task{returnType} {path.OperationID}(", 2)
@@ -77,7 +81,8 @@ namespace {config.InterfaceNamespace}
                 builder.AppendLine($"Sender.Request{returnType}(\"{path.Method}\", $\"{pathStr}\"{body});");
             }
 
-            builder.AppendLine("}", 1).AppendLine("}");
+            builder.AppendLine("}", 1)
+                   .AppendLine("}");
 
             return builder.ToString();
         }
@@ -128,7 +133,8 @@ namespace {config.ModelNamespace}
                 }
             }
 
-            builder.AppendLine("}", 1).AppendLine("}");
+            builder.AppendLine("}", 1)
+                   .AppendLine("}");
 
             return builder.ToString();
         }

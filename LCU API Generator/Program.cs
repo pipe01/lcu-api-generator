@@ -11,13 +11,22 @@ using IOPath = System.IO.Path;
 
 namespace LCU_API_Generator
 {
+    public static class Test
+    {
+
+    }
+
     class Program
     {
+        static void Met(Type type) { }
+
         static async Task Main(string[] args)
         {
             string configPath = args.Length == 1 ? args[0] : "config.json";
 
             var config = Config.Load(configPath);
+            config.Save(configPath);
+
             string swagger;
 
             if (config.GetSwaggerFromClient)
@@ -71,7 +80,10 @@ namespace LCU_API_Generator
                 def.Name = prop.Name;
 
                 return def;
-            }).ToArray();
+            })
+            .Where(o => (config.IncludeModels == null || config.IncludeEndpoints.Contains(o.Name))
+                     && (config.ExcludeModels == null || !config.ExcludeEndpoints.Contains(o.Name)))
+            .ToArray();
 
             var paths = jpaths.Children().SelectMany(o =>
             {
@@ -87,7 +99,10 @@ namespace LCU_API_Generator
 
                     return p;
                 }).ToArray();
-            }).ToArray();
+            })
+            .Where(o => (config.IncludeEndpoints == null || config.IncludeEndpoints.Contains(o.PathName))
+                     && (config.ExcludeEndpoints == null || !config.ExcludeEndpoints.Contains(o.PathName)))
+            .ToArray();
 
             int refs = 0;
             foreach (var item in definitions)
@@ -116,7 +131,7 @@ namespace LCU_API_Generator
             Console.Write("Writing path controllers: ");
             WritePaths(paths, config);
 
-            Console.Write("Writing definitions models: ");
+            Console.Write("Writing definition models: ");
             WriteModels(definitions, config);
 
             Console.WriteLine();
@@ -141,7 +156,7 @@ namespace LCU_API_Generator
             return null;
         }
 
-        private static void WritePaths(Path[] paths, Config config)
+        private static void WritePaths(IEnumerable<Path> paths, Config config)
         {
             var groups = paths.GroupBy(o =>
             {
@@ -172,17 +187,17 @@ namespace LCU_API_Generator
             Console.WriteLine("done         ");
         }
 
-        private static void WriteModels(Definition[] definitions, Config config)
+        private static void WriteModels(IEnumerable<Definition> definitions, Config config)
         {
             if (!Directory.Exists(config.ModelOutFolder))
                 Directory.CreateDirectory(config.ModelOutFolder);
 
-            int i = 0;
+            int i = 0, count = definitions.Count();
             var pos = (Console.CursorLeft, Console.CursorTop);
             foreach (var item in definitions)
             {
                 Console.SetCursorPosition(pos.CursorLeft, pos.CursorTop);
-                Console.WriteLine("{0}/{1}", i++, definitions.Length);
+                Console.WriteLine("{0}/{1}", i++, count);
 
                 File.WriteAllText(IOPath.Combine(config.ModelOutFolder, item.Name + ".cs"), ClassGenerator.Generate(item, config));
             }
