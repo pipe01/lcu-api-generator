@@ -11,7 +11,6 @@ namespace LCU_API_Generator
 {
     class Program
     {
-        private static IList<Definition> ReferencedDefinitions = new List<Definition>();
         private static string[] Args;
 
         static async Task Main(string[] args)
@@ -120,9 +119,7 @@ namespace LCU_API_Generator
             {
                 ResolveReferences(item, definitions, ref refs);
             }
-
-            ReferencedDefinitions.Clear();
-
+            
             foreach (var item in paths.SelectMany(o => o))
             {
                 item.Parameters = item.Parameters.DistinctBy(o => o.Name).ToArray();
@@ -140,19 +137,12 @@ namespace LCU_API_Generator
             }
 
             Console.WriteLine("Resolved {0} model references", refs);
-
-            ReferencedDefinitions = ReferencedDefinitions
-                .DistinctBy(o => o.Name)
-                .Where(o => definitions.Any(p => p.Name == o.Name) && (o.Properties != null || o.Enum != null))
-                .ToList();
-
-            Console.WriteLine("{0} referenced models", ReferencedDefinitions.Count);
-
+            
             Console.Write("Writing path controllers: ");
             WritePaths(paths, config);
 
             Console.Write("Writing definition models: ");
-            WriteModels(config.OnlyIncludeReferencedModels ? ReferencedDefinitions : definitions, config);
+            WriteModels(definitions, config);
 
             Console.WriteLine();
             Console.WriteLine("Done!");
@@ -264,8 +254,7 @@ namespace LCU_API_Generator
                     ResolveReferences(definition.Properties[property.Key], definitions, ref counter);
                 }
             }
-
-            ReferencedDefinitions.Add(definition);
+            
             return definition;
             
             Definition GetDefinition(string fullName)

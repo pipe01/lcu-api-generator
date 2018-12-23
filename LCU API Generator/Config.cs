@@ -49,9 +49,6 @@ namespace LCU_API_Generator
 
         [JsonProperty("addAttributeToMethods")]
         public bool AddAttributeToMethods { get; set; } = true;
-
-        [JsonProperty("onlyIncludeReferencedModels")]
-        public bool OnlyIncludeReferencedModels { get; set; } = true;
         
         private Config()
         {
