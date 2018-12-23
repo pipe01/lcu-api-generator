@@ -1,11 +1,9 @@
-﻿using GlassLCU;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using IOPath = System.IO.Path;
 
@@ -17,7 +15,7 @@ namespace LCU_API_Generator
 
         static async Task Main(string[] args)
         {
-            string configPath = args.Length == 1 ? args[0] : "config.json";
+            string configPath = args.FirstOrDefault(o => !o.StartsWith('-')) ?? "config.json";
 
             var config = Config.Load(configPath);
             config.Save(configPath);
@@ -40,6 +38,9 @@ namespace LCU_API_Generator
                     Console.ReadKey(true);
                     return;
                 }
+
+                if (swagger == null)
+                    return;
             }
             else
             {
@@ -110,6 +111,8 @@ namespace LCU_API_Generator
                      && (config.ExcludeEndpoints == null || !config.ExcludeEndpoints.Contains(o.Key)))
             .ToArray();
 
+            Console.WriteLine("Resolving references...");
+
             int refs = 0;
             foreach (var item in definitions)
             {
@@ -138,35 +141,34 @@ namespace LCU_API_Generator
 
             ReferencedDefinitions = ReferencedDefinitions
                 .DistinctBy(o => o.Name)
-                .Where(o => definitions.Any(p => p.Name == o.Name))
+                .Where(o => definitions.Any(p => p.Name == o.Name) && (o.Properties != null || o.Enum != null))
                 .ToList();
+
+            Console.WriteLine("{0} referenced models", ReferencedDefinitions.Count);
 
             Console.Write("Writing path controllers: ");
             WritePaths(paths, config);
 
             Console.Write("Writing definition models: ");
-            WriteModels(ReferencedDefinitions, config);
+            WriteModels(config.OnlyIncludeReferencedModels ? ReferencedDefinitions : definitions, config);
 
             Console.WriteLine();
             Console.WriteLine("Done!");
             Console.ReadKey(true);
         }
 
-        private static async Task<string> GetSwaggerFromClient()
+        private static Task<string> GetSwaggerFromClient()
         {
-            Console.WriteLine("Getting swagger file from LCU");
+            Console.WriteLine("Trying to connect to client");
 
-            var client = new LeagueClient();
-            var tcs = new TaskCompletionSource<bool>();
-
-            client.BeginTryInit(InitializeMethod.Lockfile, taskCompletionSource: tcs);
-
-            if (await tcs.Task)
+            if (!LCU.Connect())
             {
-                return await client.GetSwaggerJson();
+                Console.WriteLine("Make sure the client is running!");
+                Console.ReadKey(true);
+                return null;
             }
 
-            return null;
+            return LCU.GetSwagger();
         }
 
         private static void WritePaths(IEnumerable<IGrouping<string, Path>> groups, Config config)

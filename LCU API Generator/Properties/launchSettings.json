@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "LCU API Generator": {
+      "commandName": "Project",
+      "commandLineArgs": "-client"
+    }
+  }
+}
