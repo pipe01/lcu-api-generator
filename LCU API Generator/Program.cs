@@ -12,9 +12,11 @@ namespace LCU_API_Generator
     class Program
     {
         private static IList<Definition> ReferencedDefinitions = new List<Definition>();
+        private static string[] Args;
 
         static async Task Main(string[] args)
         {
+            Args = args;
             string configPath = args.FirstOrDefault(o => !o.StartsWith('-')) ?? "config.json";
 
             var config = Config.Load(configPath);
@@ -35,7 +37,7 @@ namespace LCU_API_Generator
                 {
                     Console.WriteLine("Failed to get swagger file:");
                     Console.WriteLine(ex);
-                    Console.ReadKey(true);
+                    ReadIfNotCli();
                     return;
                 }
 
@@ -53,7 +55,7 @@ namespace LCU_API_Generator
                 else
                 {
                     Console.WriteLine("Swagger file at '{0}' not found", IOPath.GetFullPath(config.SwaggerFile));
-                    Console.ReadKey(true);
+                    ReadIfNotCli();
                     return;
                 }
             }
@@ -154,7 +156,13 @@ namespace LCU_API_Generator
 
             Console.WriteLine();
             Console.WriteLine("Done!");
-            Console.ReadKey(true);
+            ReadIfNotCli();
+        }
+
+        private static void ReadIfNotCli()
+        {
+            if (!Args.Contains("-cli"))
+                Console.ReadKey(true);
         }
 
         private static Task<string> GetSwaggerFromClient()
@@ -164,7 +172,7 @@ namespace LCU_API_Generator
             if (!LCU.Connect())
             {
                 Console.WriteLine("Make sure the client is running!");
-                Console.ReadKey(true);
+                ReadIfNotCli();
                 return null;
             }
 
