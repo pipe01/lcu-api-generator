@@ -174,18 +174,23 @@ namespace LCU_API_Generator
             if (!Directory.Exists(config.InterfaceOutFolder))
                 Directory.CreateDirectory(config.InterfaceOutFolder);
 
-            int i = 0, total = groups.Count();
+            int i = 0, total = groups.Count(), lastLength = 0;
             var pos = (Console.CursorLeft, Console.CursorTop);
             foreach (var item in groups)
             {
+                int spaces = lastLength - item.Key.Length;
+                if (spaces < 0)
+                    spaces = 0;
+                lastLength = item.Key.Length;
+
                 Console.SetCursorPosition(pos.CursorLeft, pos.CursorTop);
-                Console.WriteLine("{0}/{1}", i++, total);
+                Console.WriteLine("{0}/{1} {2}{3}", i++, total, item.Key, new string(' ', spaces));
                 
                 File.WriteAllText(IOPath.Combine(config.InterfaceOutFolder, item.Key + ".cs"), ClassGenerator.Generate(item, config));
             }
 
             Console.SetCursorPosition(pos.CursorLeft, pos.CursorTop);
-            Console.WriteLine("done         ");
+            Console.WriteLine("done                    ");
         }
 
         private static void WriteModels(IEnumerable<Definition> definitions, Config config)
@@ -193,18 +198,23 @@ namespace LCU_API_Generator
             if (!Directory.Exists(config.ModelOutFolder))
                 Directory.CreateDirectory(config.ModelOutFolder);
 
-            int i = 0, count = definitions.Count();
+            int i = 0, count = definitions.Count(), lastLength = 0;
             var pos = (Console.CursorLeft, Console.CursorTop);
             foreach (var item in definitions)
             {
+                int spaces = lastLength - item.Name.Length;
+                if (spaces < 0)
+                    spaces = 0;
+                lastLength = item.Name.Length;
+
                 Console.SetCursorPosition(pos.CursorLeft, pos.CursorTop);
-                Console.WriteLine("{0}/{1}", i++, count);
+                Console.WriteLine("{0}/{1} {2}{3}", i++, count, item.Name, new string(' ', spaces));
 
                 File.WriteAllText(IOPath.Combine(config.ModelOutFolder, item.Name + ".cs"), ClassGenerator.Generate(item, config));
             }
 
             Console.SetCursorPosition(pos.CursorLeft, pos.CursorTop);
-            Console.WriteLine("done         ");
+            Console.WriteLine("done                         ");
         }
         
         
