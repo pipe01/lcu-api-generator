@@ -59,6 +59,6 @@ namespace LCU_API_Generator
             return true;
         }
 
-        public static Task<string> GetSwagger() => Client.GetStringAsync("swagger/v2/swagger.json");
+        public static Task<string> GetOpenAPI() => Client.GetStringAsync("swagger/v3/openapi.json");
     }
 }
