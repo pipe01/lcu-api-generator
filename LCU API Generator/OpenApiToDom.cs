@@ -64,6 +64,9 @@ namespace LCU_API_Generator
             if (cls == null)
                 throw new ArgumentException($"Class with name {name} not found");
 
+            var desc = cls["description"]?.Value<string>();
+            var doc = desc != null ? new Documentation(desc) : null;
+
             if (cls["type"]?.Value<string>() == "object")
             {
                 var fields = new List<Field>();
@@ -71,17 +74,20 @@ namespace LCU_API_Generator
                 foreach (var prop in cls["properties"].Children<JProperty>())
                 {
                     var fieldType = GetType(prop.Value);
-                    fields.Add(new Field(prop.Name, null, fieldType));
+                    fields.Add(new Field(
+                        prop.Name,
+                        prop["description"] != null ? new Documentation(prop["description"].Value<string>()) : null,
+                        fieldType));
                 }
 
-                return new SchemaClass(name, null, fields.ToArray());
+                return new SchemaClass(name, doc, fields.ToArray());
             }
             else if (cls["enum"] != null)
             {
                 var items = cls["enum"].Select(o => o.Value<string>());
 
                 //Currently all enum are of type "string"
-                return new EnumClass(name, null, new PrimitiveVariableType(PrimitiveTypes.String), items.ToArray());
+                return new EnumClass(name, doc, new PrimitiveVariableType(PrimitiveTypes.String), items.ToArray());
             }
 
             throw new InvalidOperationException("Invalid schema type found: " + cls["type"]);
