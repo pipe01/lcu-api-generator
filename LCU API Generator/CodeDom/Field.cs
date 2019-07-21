@@ -1,6 +1,8 @@
-﻿namespace LCU_API_Generator.CodeDom
+﻿using System.Collections.Generic;
+
+namespace LCU_API_Generator.CodeDom
 {
-    public class Field : CodeItem
+    public class Field : CodeItem, ITypeContainer
     {
         public VariableType Type { get; }
 
@@ -8,5 +10,7 @@
         {
             this.Type = type;
         }
+
+        IEnumerable<VariableType> ITypeContainer.GetTypes() => new[] { Type };
     }
 }

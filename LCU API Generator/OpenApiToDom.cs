@@ -179,5 +179,12 @@ namespace LCU_API_Generator
             return new Method(methodName, methodDoc, path, parameters, httpMethod, responseType);
         }
         #endregion
+
+        public IEnumerable<Class> GetReferencedSchemas(string tag)
+        {
+            var paths = ParsePathsUnderTag(tag);
+
+            return (paths as ITypeContainer).GetTypes().OfType<ClassVariableType>().Select(o => o.Class);
+        }
     }
 }

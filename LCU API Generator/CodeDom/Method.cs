@@ -1,9 +1,10 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 
 namespace LCU_API_Generator.CodeDom
 {
-    public class Method : CodeItem
+    public class Method : CodeItem, ITypeContainer
     {
         public string Path { get; }
         public IDictionary<string, Parameter> Parameters { get; }
@@ -18,5 +19,9 @@ namespace LCU_API_Generator.CodeDom
             this.HttpMethod = httpMethod;
             this.ResponseType = responseType;
         }
+
+        IEnumerable<VariableType> ITypeContainer.GetTypes() => ResponseType == null
+            ? Parameters.Select(o => o.Value.Type)
+            : Parameters.Select(o => o.Value.Type).Append(ResponseType);
     }
 }

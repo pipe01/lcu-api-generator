@@ -1,4 +1,7 @@
-﻿namespace LCU_API_Generator.CodeDom
+﻿using System.Collections.Generic;
+using System.Linq;
+
+namespace LCU_API_Generator.CodeDom
 {
     public abstract class Class : CodeItem
     {
@@ -7,7 +10,7 @@
         }
     }
 
-    public sealed class SchemaClass : Class
+    public sealed class SchemaClass : Class, ITypeContainer
     {
         public Field[] Fields { get; }
 
@@ -15,9 +18,11 @@
         {
             this.Fields = fields;
         }
+
+        IEnumerable<VariableType> ITypeContainer.GetTypes() => Fields.OfType<ITypeContainer>().SelectMany(o => o.GetTypes());
     }
 
-    public sealed class PathsClass : Class
+    public sealed class PathsClass : Class, ITypeContainer
     {
         public Method[] Methods { get; }
 
@@ -25,9 +30,11 @@
         {
             this.Methods = methods;
         }
+
+        IEnumerable<VariableType> ITypeContainer.GetTypes() => Methods.SelectMany(o => (o as ITypeContainer).GetTypes());
     }
 
-    public sealed class EnumClass : Class
+    public sealed class EnumClass : Class, ITypeContainer
     {
         public VariableType ItemsType { get; }
         public string[] ItemNames { get; }
@@ -37,5 +44,7 @@
             this.ItemsType = itemsType;
             this.ItemNames = itemNames;
         }
+
+        IEnumerable<VariableType> ITypeContainer.GetTypes() => new[] { ItemsType };
     }
 }
