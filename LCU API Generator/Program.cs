@@ -1,4 +1,6 @@
-﻿using Newtonsoft.Json;
+﻿using LCU_API_Generator.Generator;
+using LCU_API_Generator.Generator.CSharp;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -64,6 +66,16 @@ namespace LCU_API_Generator
 
             var classes = conv.ParseAllSchemas();
             var paths = conv.ParseAllTags().ToArray();
+
+            IGenerator gen = new CSharpGenerator();
+
+            foreach (var cls in classes)
+            {
+                gen.GenerateSchema(cls.Value, new Workspace(new GeneratorOptions
+                {
+                    SchemaNamespace = "My.Namespace"
+                }, "gen/"));
+            }
 
 
             Console.WriteLine();

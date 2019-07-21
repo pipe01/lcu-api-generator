@@ -47,4 +47,11 @@ namespace LCU_API_Generator.CodeDom
 
         IEnumerable<VariableType> ITypeContainer.GetTypes() => new[] { ItemsType };
     }
+
+    public sealed class SelfClass : Class
+    {
+        internal SelfClass(string name, Documentation documentation) : base(name, documentation)
+        {
+        }
+    }
 }

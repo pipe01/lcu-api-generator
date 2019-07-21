@@ -40,7 +40,7 @@ namespace LCU_API_Generator
             if (SchemaStack.Contains(name))
             {
                 //Console.WriteLine("Circular reference detected on " + name);
-                return null;
+                return new SelfClass(name, null);
             }
 
             SchemaStack.Push(name);
