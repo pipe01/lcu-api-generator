@@ -63,7 +63,7 @@ namespace LCU_API_Generator
             var conv = new OpenApiToDom(json);
 
             var classes = conv.ParseAllSchemas();
-            var paths = conv.GetReferencedSchemas("Plugins").ToArray();
+            var paths = conv.ParseAllTags().ToArray();
 
 
             Console.WriteLine();

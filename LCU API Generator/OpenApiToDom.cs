@@ -132,6 +132,26 @@ namespace LCU_API_Generator
         #endregion
 
         #region Paths
+        public IEnumerable<Class> ParseAllTags()
+        {
+            var parsedTags = new List<string>();
+
+            foreach (JProperty path in Json["paths"])
+            {
+                foreach (JProperty method in path.Value)
+                {
+                    foreach (string tag in (method.Value["tags"] as JArray).Values<string>())
+                    {
+                        if (!parsedTags.Contains(tag))
+                        {
+                            parsedTags.Add(tag);
+                            yield return ParsePathsUnderTag(tag);
+                        }
+                    }
+                }
+            }
+        }
+
         public Class ParsePathsUnderTag(string tag)
         {
             var methods = new List<Method>();
@@ -147,7 +167,12 @@ namespace LCU_API_Generator
                 }
             }
 
-            return new PathsClass(tag.Humanize(), null, methods.ToArray());
+            string name = tag.Dehumanize();
+
+            if (name.StartsWith("Plugin") && name != "Plugins")
+                name = name.Substring("Plugin".Length);
+
+            return new PathsClass(name, null, methods.ToArray());
         }
 
         private Method ParsePathMethod(JToken json, HttpMethod httpMethod, string path)
