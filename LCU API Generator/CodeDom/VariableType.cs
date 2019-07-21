@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json.Linq;
+using System.Diagnostics;
 
 namespace LCU_API_Generator.CodeDom
 {
@@ -17,6 +18,7 @@ namespace LCU_API_Generator.CodeDom
     {
     }
 
+    [DebuggerDisplay("{Type}")]
     public sealed class PrimitiveVariableType : VariableType
     {
         public PrimitiveTypes Type { get; }
@@ -27,6 +29,7 @@ namespace LCU_API_Generator.CodeDom
         }
     }
 
+    [DebuggerDisplay("{Class.Name}")]
     public sealed class ClassVariableType : VariableType
     {
         public Class Class { get; }
@@ -37,6 +40,7 @@ namespace LCU_API_Generator.CodeDom
         }
     }
 
+    [DebuggerDisplay("{ItemsType}[]")]
     public sealed class ArrayVariableType : VariableType
     {
         public VariableType ItemsType { get; }

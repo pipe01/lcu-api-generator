@@ -60,8 +60,10 @@ namespace LCU_API_Generator
             }
             
             var json = JObject.Parse(swagger);
+            var conv = new OpenApiToDom(json);
 
-            var classes = new OpenApiToDom(json).ParseSchemas();
+            var classes = conv.ParseAllSchemas();
+            var paths = conv.ParsePathsUnderTag("Plugins");
 
 
             Console.WriteLine();

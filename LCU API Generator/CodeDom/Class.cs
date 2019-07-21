@@ -17,6 +17,16 @@
         }
     }
 
+    public sealed class PathsClass : Class
+    {
+        public Method[] Methods { get; }
+
+        public PathsClass(string name, Documentation documentation, Method[] methods) : base(name, documentation)
+        {
+            this.Methods = methods;
+        }
+    }
+
     public sealed class EnumClass : Class
     {
         public VariableType ItemsType { get; }

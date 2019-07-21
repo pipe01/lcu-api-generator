@@ -1,9 +1,11 @@
-﻿using LCU_API_Generator.CodeDom;
+﻿using Humanizer;
+using LCU_API_Generator.CodeDom;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -20,7 +22,8 @@ namespace LCU_API_Generator
             this.Json = json;
         }
 
-        public IDictionary<string, Class> ParseSchemas()
+        #region Schemas
+        public IDictionary<string, Class> ParseAllSchemas()
         {
             var dic = new Dictionary<string, Class>();
 
@@ -73,10 +76,10 @@ namespace LCU_API_Generator
 
                 foreach (var prop in cls["properties"].Children<JProperty>())
                 {
-                    var fieldType = GetType(prop.Value);
+                    var fieldType = GetSchemaType(prop.Value);
                     fields.Add(new Field(
                         prop.Name,
-                        prop["description"] != null ? new Documentation(prop["description"].Value<string>()) : null,
+                        prop.Value["description"] != null ? new Documentation(prop.Value["description"].Value<string>()) : null,
                         fieldType));
                 }
 
@@ -93,10 +96,13 @@ namespace LCU_API_Generator
             throw new InvalidOperationException("Invalid schema type found: " + cls["type"]);
         }
 
-        private VariableType GetType(JToken type)
+        private VariableType GetSchemaType(JToken type, string fullKey = null)
         {
             if (type["$ref"] != null)
                 return new ClassVariableType(GetSchemaClass(type["$ref"].Value<string>().Split('/').Last()));
+
+            if (type["enum"] != null && fullKey != null)
+                return new ClassVariableType(new EnumClass(fullKey, null, GetSchemaType(type), type["enum"].Select(o => o.Value<string>()).ToArray()));
 
             var typeStr = type["type"]?.Value<string>();
             var format = type["format"]?.Value<string>();
@@ -116,12 +122,62 @@ namespace LCU_API_Generator
                 case "boolean":
                     return new PrimitiveVariableType(PrimitiveTypes.Boolean);
                 case "array":
-                    return new ArrayVariableType(GetType(type["items"]));
+                    return new ArrayVariableType(GetSchemaType(type["items"]));
                 case "object" when type["additionalProperties"] != null:
                     return new PrimitiveVariableType(PrimitiveTypes.UnknownObject);
             }
 
             throw new Exception($"Invalid type found: {typeStr}" + (format != null ? $" with format {format}" : null));
         }
+        #endregion
+
+        #region Paths
+        public Class ParsePathsUnderTag(string tag)
+        {
+            var methods = new List<Method>();
+
+            foreach (JProperty path in Json["paths"])
+            {
+                foreach (JProperty method in path.Value)
+                {
+                    if ((method.Value["tags"] as JArray).Values<string>().Contains(tag))
+                    {
+                        methods.Add(ParsePathMethod(method.Value, new HttpMethod(method.Name), path.Name));
+                    }
+                }
+            }
+
+            return new PathsClass(tag.Humanize(), null, methods.ToArray());
+        }
+
+        private Method ParsePathMethod(JToken json, HttpMethod httpMethod, string path)
+        {
+            var parameters = new Dictionary<string, Parameter>();
+            var methodName = json["operationId"].Value<string>();
+            var methodDoc = json["summary"] != null ? new Documentation(json["summary"].Value<string>()) : null;
+            VariableType responseType = null;
+
+            foreach (var param in json["parameters"])
+            {
+                var name = param["name"].Value<string>();
+
+                if (parameters.ContainsKey(name))
+                    continue; //Some parameters are duplicate for absolutely no reason
+
+                var type = GetSchemaType(param, methodName + name.Dehumanize());
+                var position = Enum.Parse<ParameterPosition>(param["in"].Value<string>(), true);
+                var doc = json["description"] != null ? new Documentation(json["description"].Value<string>()) : null;
+
+                parameters.Add(name, new Parameter(name, doc, type, position, param["required"].Value<bool>()));
+            }
+
+            var resp = json["responses"]?["200"]?["content"]?["application/json"]?["schema"];
+
+            if (resp != null)
+                responseType = GetSchemaType(resp, methodName + "Response");
+
+            return new Method(methodName, methodDoc, path, parameters, httpMethod, responseType);
+        }
+        #endregion
     }
 }

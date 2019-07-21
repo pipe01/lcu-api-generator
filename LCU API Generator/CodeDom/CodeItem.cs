@@ -1,5 +1,8 @@
-﻿namespace LCU_API_Generator.CodeDom
+﻿using System.Diagnostics;
+
+namespace LCU_API_Generator.CodeDom
 {
+    [DebuggerDisplay("{Name}")]
     public abstract class CodeItem
     {
         public string Name { get; }
