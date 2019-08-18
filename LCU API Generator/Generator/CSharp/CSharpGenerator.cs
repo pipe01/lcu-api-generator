@@ -11,9 +11,22 @@ using Resourcer;
 
 namespace LCU_API_Generator.Generator.CSharp
 {
+    public class CSharpOptions
+    {
+        public string SchemaNamespace { get; set; }
+        public string InterfaceNamespace { get; set; }
+    }
+
     public class CSharpGenerator : IGenerator
     {
         public string LanguageKey => "cs";
+
+        private readonly CSharpOptions Options;
+
+        public CSharpGenerator(CSharpOptions options)
+        {
+            this.Options = options;
+        }
 
         public void Setup(Workspace workspace)
         {
@@ -27,8 +40,8 @@ namespace LCU_API_Generator.Generator.CSharp
             builder.AppendLine("using Newtonsoft.Json;")
                    .AppendLine();
 
-            if (workspace.Options.SchemaNamespace != null)
-                builder.AI().AppendLine($"namespace {workspace.Options.SchemaNamespace}")
+            if (Options.SchemaNamespace != null)
+                builder.AI().AppendLine($"namespace {Options.SchemaNamespace}")
                        .AI().AppendLine("{")
                        .Indent();
 
@@ -73,7 +86,7 @@ namespace LCU_API_Generator.Generator.CSharp
             }
 
 
-            if (workspace.Options.SchemaNamespace != null)
+            if (Options.SchemaNamespace != null)
                 builder.Unindent()
                        .AI().AppendLine("}");
 
@@ -125,8 +138,8 @@ namespace LCU_API_Generator.Generator.CSharp
                    .AppendLine("using static GenerationUtils;")
                    .AppendLine();
 
-            if (workspace.Options.SchemaNamespace != null)
-                builder.AI().AppendLine($"namespace {workspace.Options.SchemaNamespace}")
+            if (Options.SchemaNamespace != null)
+                builder.AI().AppendLine($"namespace {Options.SchemaNamespace}")
                        .AI().AppendLine("{")
                        .Indent();
 
@@ -204,7 +217,7 @@ namespace LCU_API_Generator.Generator.CSharp
 
             builder.AI().AppendLine("}");
 
-            if (workspace.Options.SchemaNamespace != null)
+            if (Options.SchemaNamespace != null)
                 builder.Unindent()
                        .AI().AppendLine("}");
 

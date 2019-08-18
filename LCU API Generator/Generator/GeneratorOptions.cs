@@ -2,7 +2,5 @@
 {
     public class GeneratorOptions
     {
-        public string SchemaNamespace { get; set; }
-        public string InterfaceNamespace { get; set; }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using LCU_API_Generator.CodeDom;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -88,6 +89,14 @@ namespace LCU_API_Generator
         public static IEnumerable<T> Yield<T>(this T item)
         {
             yield return item;
+        }
+
+        public static void AddRange<T>(this HashSet<T> set, IEnumerable<T> items)
+        {
+            foreach (var item in items)
+            {
+                set.Add(item);
+            }
         }
     }
 }

@@ -17,13 +17,23 @@ namespace LCU_API_Generator
     {
         private static string[] Args;
 
-        static void Main(string[] args)
+        static int Main(string[] args)
         {
             Args = args;
             string configPath = args.FirstOrDefault(o => !o.StartsWith('-')) ?? "config.json";
 
             var config = Config.Load(configPath);
             config.Save(configPath);
+
+            if (config.IncludeEndpoints != null && config.IncludeEndpoints.Length > 0
+             && config.ExcludeEndpoints != null && config.ExcludeEndpoints.Length > 0)
+            {
+                using (SimpleConsoleColors.Red)
+                    Console.WriteLine("You can't specify IncludeEndpoints and ExcludeEndpoints");
+                PauseIfNotCli();
+
+                return -1;
+            }
 
             if (args.Contains("--client"))
                 config.GetSwaggerFromClient = true;
@@ -51,15 +61,17 @@ namespace LCU_API_Generator
             {
                 if (File.Exists(config.SwaggerFile))
                 {
-                    Console.WriteLine("Reading file at " + config.SwaggerFile);
+                    using (SimpleConsoleColors.DarkGray)
+                        Console.WriteLine("Reading file at " + config.SwaggerFile);
 
                     swagger = File.ReadAllText(config.SwaggerFile);
                 }
                 else
                 {
-                    Console.WriteLine("Swagger file at '{0}' not found", IOPath.GetFullPath(config.SwaggerFile));
-                    ReadIfNotCli();
-                    return;
+                    using (SimpleConsoleColors.Red)
+                        Console.WriteLine("Swagger file at '{0}' not found", IOPath.GetFullPath(config.SwaggerFile));
+                    PauseIfNotCli();
+                    return -1;
                 }
             }
             
@@ -67,49 +79,116 @@ namespace LCU_API_Generator
             var conv = new OpenApiToDom(json);
 
             var allClasses = conv.ParseAllSchemas();
-            var allPaths = conv.ParseAllTags().Take(4).ToArray();
-            var usedClasses = new List<Class>();
+            var allPaths = conv.ParseAllTags().ToArray();
+            var usedClasses = new HashSet<Class>(new ClassEqualityComparer());
+            var pathsToGenerate = new List<PathsClass>();
 
-            IGenerator gen = new CSharpGenerator();
-            var workspace = new Workspace(new GeneratorOptions
+            if (!AddPaths(config, allPaths, pathsToGenerate))
+                return -1;
+
+            IGenerator gen = new CSharpGenerator(new CSharpOptions
             {
                 SchemaNamespace = "My.Namespace"
-            }, "gen/");
+            });
+            var workspace = new Workspace(new GeneratorOptions(), "gen/");
 
             gen.Setup(workspace);
 
+
             Console.Write("Generating interfaces: ");
             ConsoleWriter.SetInitial();
-            foreach (var cls in allPaths)
+
+            foreach (var cls in pathsToGenerate)
             {
                 ConsoleWriter.Write(cls.Name);
                 usedClasses.AddRange(((ITypeContainer)cls).GetTypes().OfType<ClassVariableType>().Select(o => o.Class));
 
                 gen.GenerateInterface(cls, workspace);
             }
-            ConsoleWriter.Write("Done!");
+
+            using (SimpleConsoleColors.Green)
+                ConsoleWriter.Write("Done!");
             Console.WriteLine();
+
 
             Console.Write("Generating models: ");
             ConsoleWriter.SetInitial();
+
             foreach (var cls in usedClasses)
             {
                 ConsoleWriter.Write(cls.Name);
 
                 gen.GenerateSchema(cls, workspace);
             }
-            ConsoleWriter.Write("Done!");
+
+            using (SimpleConsoleColors.Green)
+                ConsoleWriter.Write("Done!");
+
 
             gen.Finish(workspace);
 
             Console.WriteLine();
-            Console.WriteLine("All done!");
-            ReadIfNotCli();
+            Console.WriteLine();
+            using (SimpleConsoleColors.Green)
+                Console.WriteLine($"Successfully generated {pathsToGenerate.Count} interfaces and {usedClasses.Count} classes");
+            PauseIfNotCli();
+
+            return 0;
         }
 
-        private static void ReadIfNotCli()
+        private static bool AddPaths(Config config, IEnumerable<PathsClass> allPaths, List<PathsClass> list)
         {
-            if (!Args.Contains("-cli"))
+            if (config.IncludePlugins != null)
+            {
+                foreach (var item in config.IncludePlugins)
+                {
+                    list.AddRange(allPaths.Where(o => o.Name.Equals(item, StringComparison.OrdinalIgnoreCase)));
+                }
+            }
+            else if (config.ExcludePlugins != null)
+            {
+                list.AddRange(allPaths.Where(o => !Array.Exists(config.ExcludePlugins, i => i == o.Name)));
+            }
+
+            if (config.IncludeEndpoints != null)
+            {
+                var allMethods = new List<(PathsClass, Method[])>();
+
+                foreach (var item in allPaths)
+                {
+                    var methodsToInclude = item.Methods.Where(o => config.IncludeEndpoints.Contains(o.Path)).ToArray();
+
+                    if (methodsToInclude.Length > 0)
+                        list.Add(item.Copy(methodsToInclude));
+                }
+            }
+            else if (config.ExcludeEndpoints != null)
+            {
+                int i = 0;
+
+                foreach (var cls in list)
+                {
+                    var methodsToRemove = new List<Method>();
+
+                    foreach (var method in cls.Methods)
+                    {
+                        if (config.ExcludeEndpoints.Contains(method.Path))
+                            methodsToRemove.Add(method);
+                    }
+
+                    if (methodsToRemove.Count > 0)
+                        list[i] = cls.Copy(cls.Methods.Except(methodsToRemove).ToArray());
+
+                    i++;
+                }
+            }
+
+            return true;
+        }
+
+        private static void PauseIfNotCli()
+        {
+            if (!Args.Contains("--cli"))
                 Console.ReadKey(true);
         }
 
@@ -120,11 +199,18 @@ namespace LCU_API_Generator
             if (!LCU.Connect())
             {
                 Console.WriteLine("Make sure the client is running!");
-                ReadIfNotCli();
+                PauseIfNotCli();
                 return null;
             }
 
             return LCU.GetOpenAPI();
         }
+    }
+
+    public class ClassEqualityComparer : IEqualityComparer<Class>
+    {
+        public bool Equals(Class x, Class y) => x.Name == y.Name;
+
+        public int GetHashCode(Class obj) => obj.Name.GetHashCode();
     }
 }

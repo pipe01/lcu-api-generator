@@ -31,6 +31,11 @@ namespace LCU_API_Generator.CodeDom
             this.Methods = methods;
         }
 
+        public PathsClass Copy(Method[] methods)
+        {
+            return new PathsClass(Name, Documentation, methods);
+        }
+
         IEnumerable<VariableType> ITypeContainer.GetTypes() => Methods.SelectMany(o => (o as ITypeContainer).GetTypes());
     }
 
