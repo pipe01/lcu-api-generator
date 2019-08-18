@@ -98,5 +98,12 @@ namespace LCU_API_Generator
                 set.Add(item);
             }
         }
+
+        public static IEnumerable<Class> GetClasses(this IEnumerable<VariableType> variableTypes)
+        {
+            return variableTypes.OfType<ClassVariableType>().Concat(
+                   variableTypes.OfType<ArrayVariableType>().Select(o => o.ItemsType).OfType<ClassVariableType>())
+                .Select(o => o.Class);
+        }
     }
 }

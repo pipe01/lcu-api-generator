@@ -23,5 +23,13 @@ namespace LCU_API_Generator.Generator
             Directory.CreateDirectory(Path.GetDirectoryName(path));
             File.WriteAllText(path, contents);
         }
+
+        public Stream OpenWriteFile(string fileName, bool overwrite = true)
+        {
+            string path = Path.Combine(Root, fileName);
+
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            return File.Open(path, overwrite ? FileMode.Create : FileMode.CreateNew, FileAccess.Write);
+        }
     }
 }

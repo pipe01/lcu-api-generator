@@ -90,13 +90,16 @@ namespace LCU_API_Generator
             var allPaths = conv.ParseAllTags().ToArray();
             var usedClasses = new HashSet<Class>(new ClassEqualityComparer());
             var pathsToGenerate = new List<PathsClass>();
+            int totalClasses = 0;
 
             if (!AddPaths(config, allPaths, pathsToGenerate))
                 return -1;
 
             IGenerator gen = new CSharpGenerator(new CSharpOptions
             {
-                SchemaNamespace = "My.Namespace"
+                SchemaNamespace = config.ModelNamespace,
+                InterfaceNamespace = config.InterfaceNamespace,
+                IncludedFileNamespace = config.IncludedFileNamespace
             });
             var workspace = new Workspace(new GeneratorOptions(), "gen/");
 
@@ -109,7 +112,8 @@ namespace LCU_API_Generator
             foreach (var cls in pathsToGenerate)
             {
                 ConsoleWriter.Write(cls.Name);
-                usedClasses.AddRange(((ITypeContainer)cls).GetTypes().OfType<ClassVariableType>().Select(o => o.Class));
+
+                usedClasses.AddRange(((ITypeContainer)cls).GetTypes().GetClasses());
 
                 gen.GenerateInterface(cls, workspace);
             }
@@ -122,9 +126,33 @@ namespace LCU_API_Generator
             Console.Write("Generating models: ");
             ConsoleWriter.SetInitial();
 
+            using (SimpleConsoleColors.Blue)
+                ConsoleWriter.Write("Preprocessing...");
+
+            foreach (var cls in usedClasses.ToArray())
+            {
+                AddChildrenTypes(cls);
+            }
+
+            void AddChildrenTypes(Class cls)
+            {
+                if (cls is ITypeContainer container)
+                {
+                    var classes = container.GetTypes().GetClasses();
+
+                    usedClasses.AddRange(classes);
+
+                    foreach (var item in classes)
+                    {
+                        AddChildrenTypes(item);
+                    }
+                }
+            }
+
             foreach (var cls in usedClasses)
             {
                 ConsoleWriter.Write(cls.Name);
+                totalClasses++;
 
                 gen.GenerateSchema(cls, workspace);
             }
@@ -146,6 +174,12 @@ namespace LCU_API_Generator
 
         private static bool AddPaths(Config config, IEnumerable<PathsClass> allPaths, List<PathsClass> list)
         {
+            if (config.IncludeEndpoints == null && config.ExcludeEndpoints == null && config.IncludePlugins == null && config.ExcludePlugins == null)
+            {
+                list.AddRange(allPaths);
+                return true;
+            }
+
             if (config.IncludePlugins != null)
             {
                 foreach (var item in config.IncludePlugins)

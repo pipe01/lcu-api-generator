@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Humanizer;
 using LCU_API_Generator.CodeDom;
@@ -15,10 +17,13 @@ namespace LCU_API_Generator.Generator.CSharp
     {
         public string SchemaNamespace { get; set; }
         public string InterfaceNamespace { get; set; }
+        public string IncludedFileNamespace { get; set; }
     }
 
     public class CSharpGenerator : IGenerator
     {
+        private static readonly Regex PathParamsRegex = new Regex("(?<={).*?(?=})");
+
         public string LanguageKey => "cs";
 
         private readonly CSharpOptions Options;
@@ -30,12 +35,37 @@ namespace LCU_API_Generator.Generator.CSharp
 
         public void Setup(Workspace workspace)
         {
-            workspace.WriteToFile("Include.cs", Resource.AsString("Include.cs"));
+            var indentation = "";
+            var inNamespace = !string.IsNullOrEmpty(Options.IncludedFileNamespace);
+
+            using (var importFile = Resource.AsStreamReader("Include.cs"))
+            using (var file = workspace.OpenWriteFile("Include.cs"))
+            using (var writer = new StreamWriter(file))
+            {
+                if (inNamespace)
+                {
+                    writer.WriteLine("namespace " + Options.IncludedFileNamespace);
+                    writer.WriteLine("{");
+
+                    indentation = new string(' ', 4);
+                }
+
+                while (!importFile.EndOfStream)
+                {
+                    writer.WriteLine(indentation + importFile.ReadLine());
+                }
+
+                if (inNamespace)
+                    writer.WriteLine("}");
+            }
         }
 
         public void GenerateSchema(Class schema, Workspace workspace)
         {
             var builder = new StringBuilder();
+
+            if (schema is EnumClass)
+                builder.AppendLine("using System.Runtime.Serialization;");
 
             builder.AppendLine("using Newtonsoft.Json;")
                    .AppendLine();
@@ -76,7 +106,7 @@ namespace LCU_API_Generator.Generator.CSharp
 
                 foreach (var field in @enum.ItemNames)
                 {
-                    builder.AI().AppendLine($"[System.Runtime.Serialization.EnumMember(Value = \"{field}\")]")
+                    builder.AI().AppendLine($"[EnumMember(Value = \"{field}\")]")
                            .AI().AppendLine($"{field.Dehumanize()},");
                 }
 
@@ -134,9 +164,8 @@ namespace LCU_API_Generator.Generator.CSharp
         {
             var builder = new StringBuilder();
 
-            builder.AppendLine("using Newtonsoft.Json;")
-                   .AppendLine("using System.Threading.Tasks;")
-                   .AppendLine("using static GenerationUtils;")
+            builder.AppendLine("using System.Threading.Tasks;")
+                   .AppendLine($"using static {(string.IsNullOrEmpty(Options.IncludedFileNamespace) ? "" : Options.IncludedFileNamespace + ".")}GenerationUtils;")
                    .AppendLine();
 
             if (Options.SchemaNamespace != null)
@@ -192,7 +221,9 @@ namespace LCU_API_Generator.Generator.CSharp
                 if (method.ResponseType != null)
                     builder.Append($"<{GetCSType(method.ResponseType)}>");
 
-                builder.Append($"(\"{method.HttpMethod.ToString().ToLower()}\", $\"{method.Path}");
+                string path = PathParamsRegex.Replace(method.Path, o => paramNames[o.Value]);
+
+                builder.Append($"(\"{method.HttpMethod.ToString().ToLower()}\", $\"{path}");
 
                 bool isFirstQueryParam = true;
                 foreach (var param in method.Parameters.Where(o => o.Value.Position == ParameterPosition.Query))
@@ -202,14 +233,19 @@ namespace LCU_API_Generator.Generator.CSharp
                     else
                         builder.Append("&");
 
-                    builder.Append($"{param.Key}={param.Key}");
+                    builder.Append($"{param.Key}={{{paramNames[param.Key]}}}");
 
                     isFirstQueryParam = false;
                 }
 
                 //TODO Header parameters
 
-                builder.AppendLine("\");");
+                builder.Append("\"");
+
+                if (method.RequestType != null)
+                    builder.Append(", body");
+
+                builder.AppendLine(");");
 
                 builder.Unindent();
             }

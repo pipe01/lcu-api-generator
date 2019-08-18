@@ -22,8 +22,17 @@ namespace LCU_API_Generator.CodeDom
             this.RequestType = requestType;
         }
 
-        IEnumerable<VariableType> ITypeContainer.GetTypes() => ResponseType == null
-            ? Parameters.Select(o => o.Value.Type)
-            : Parameters.Select(o => o.Value.Type).Append(ResponseType);
+        IEnumerable<VariableType> ITypeContainer.GetTypes()
+        {
+            var ret = Parameters.Select(o => o.Value.Type);
+
+            if (ResponseType != null)
+                ret = ret.Append(ResponseType);
+
+            if (RequestType != null)
+                ret = ret.Append(RequestType);
+
+            return ret;
+        }
     }
 }
