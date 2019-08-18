@@ -1,17 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Humanizer;
 using LCU_API_Generator.CodeDom;
 using Newtonsoft.Json;
+using Resourcer;
 
 namespace LCU_API_Generator.Generator.CSharp
 {
     public class CSharpGenerator : IGenerator
     {
-        public string Key => "cs";
+        public string LanguageKey => "cs";
+
+        public void Setup(Workspace workspace)
+        {
+            workspace.WriteToFile("Include.cs", Resource.AsString("Include.cs"));
+        }
 
         public void GenerateSchema(Class schema, Workspace workspace)
         {
@@ -21,14 +28,14 @@ namespace LCU_API_Generator.Generator.CSharp
                    .AppendLine();
 
             if (workspace.Options.SchemaNamespace != null)
-                builder.AppendIndentation().AppendLine($"namespace {workspace.Options.SchemaNamespace}")
-                       .AppendIndentation().AppendLine("{")
+                builder.AI().AppendLine($"namespace {workspace.Options.SchemaNamespace}")
+                       .AI().AppendLine("{")
                        .Indent();
 
             if (schema is SchemaClass cls)
             {
-                builder.AppendIndentation().AppendLine($"public class {cls.Name}")
-                       .AppendIndentation().AppendLine("{")
+                builder.AI().AppendLine($"public class {cls.Name}")
+                       .AI().AppendLine("{")
                        .Indent();
 
 
@@ -39,38 +46,37 @@ namespace LCU_API_Generator.Generator.CSharp
                     if (name == cls.Name)
                         name = name[0] + name;
 
-                    builder.AppendIndentation().AppendLine($"[JsonProperty(\"{field.Name}\")]")
-                           .AppendIndentation().AppendLine($"public {GetCSType(field.Type)} {name};");
+                    builder.AI().AppendLine($"[JsonProperty(\"{field.Name}\")]")
+                           .AI().AppendLine($"public {GetCSType(field.Type)} {name};");
                 }
 
 
                 builder.Unindent()
-                       .AppendIndentation().AppendLine("}");
+                       .AI().AppendLine("}");
             }
             else if (schema is EnumClass @enum)
             {
-                builder.AppendIndentation().AppendLine("[JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]")
-                       .AppendIndentation().AppendLine($"public enum {@enum.Name}")
-                       .AppendIndentation().AppendLine("{")
+                builder.AI().AppendLine("[JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]")
+                       .AI().AppendLine($"public enum {@enum.Name}")
+                       .AI().AppendLine("{")
                        .Indent();
 
                 foreach (var field in @enum.ItemNames)
                 {
-                    builder.AppendIndentation().AppendLine($"[System.Runtime.Serialization.EnumMember(Value = \"{field}\")]")
-                           .AppendIndentation().AppendLine($"{field.Dehumanize()},");
+                    builder.AI().AppendLine($"[System.Runtime.Serialization.EnumMember(Value = \"{field}\")]")
+                           .AI().AppendLine($"{field.Dehumanize()},");
                 }
 
 
                 builder.Unindent()
-                       .AppendIndentation().AppendLine("}");
+                       .AI().AppendLine("}");
             }
 
 
             if (workspace.Options.SchemaNamespace != null)
                 builder.Unindent()
-                       .AppendIndentation().AppendLine("}");
+                       .AI().AppendLine("}");
 
-            Console.WriteLine(schema.Name);
             workspace.WriteToFile("Schemas/" + schema.Name + ".cs", builder.ToString());
         }
 
@@ -109,6 +115,104 @@ namespace LCU_API_Generator.Generator.CSharp
             }
 
             throw new ArgumentException("Invalid type");
+        }
+
+        public void GenerateInterface(PathsClass paths, Workspace workspace)
+        {
+            var builder = new StringBuilder();
+
+            builder.AppendLine("using Newtonsoft.Json;")
+                   .AppendLine("using static GenerationUtils;")
+                   .AppendLine();
+
+            if (workspace.Options.SchemaNamespace != null)
+                builder.AI().AppendLine($"namespace {workspace.Options.SchemaNamespace}")
+                       .AI().AppendLine("{")
+                       .Indent();
+
+            builder.AI().AppendLine($"public class {paths.Name}")
+                   .AI().AppendLine("{");
+
+            builder.Indent();
+
+            foreach (var method in paths.Methods)
+            {
+                var paramNames = method.Parameters.Keys.ToDictionary(o => o, o => o.Prettify());
+
+                if (method.Documentation != null)
+                {
+                    builder.AI().AppendLine("///<summary>")
+                           .AI().AppendLine($"///{method.Documentation.Summary}")
+                           .AI().AppendLine("///</summary>");
+                }
+
+                foreach (var param in method.Parameters)
+                {
+                    if (param.Value.Documentation != null)
+                        builder.AI().AppendLine($"///<param name=\"{paramNames[param.Key]}\">{param.Value.Documentation.Summary}</param>");
+                }
+
+                builder.AI().Append($"public {GetCSType(method.ResponseType)} {method.Name}(");
+
+                if (method.RequestType != null)
+                {
+                    builder.Append($"{GetCSType(method.RequestType)} body");
+
+                    if (method.Parameters.Count > 0)
+                        builder.Append(", ");
+                }
+
+                foreach (var param in method.Parameters)
+                {
+                    builder.Append($"{GetCSType(param.Value.Type)} {paramNames[param.Key]}");
+
+                    if (param.Key != method.Parameters.Keys.Last())
+                        builder.Append(", ");
+                }
+
+                builder.AppendLine(")")
+                       .Indent();
+
+                builder.AI().Append("=> Sender.Request");
+
+                if (method.ResponseType != null)
+                    builder.Append($"<{GetCSType(method.ResponseType)}>");
+
+                builder.Append($"(\"{method.HttpMethod.ToString().ToLower()}\", $\"{method.Path}");
+
+                bool isFirstQueryParam = true;
+                foreach (var param in method.Parameters.Where(o => o.Value.Position == ParameterPosition.Query))
+                {
+                    if (isFirstQueryParam)
+                        builder.Append("?");
+                    else
+                        builder.Append("&");
+
+                    builder.Append($"{param.Key}={param.Key}");
+
+                    isFirstQueryParam = false;
+                }
+
+                //TODO Header parameters
+
+                builder.AppendLine("\");");
+
+                builder.Unindent();
+            }
+
+            builder.Unindent();
+
+            builder.AI().AppendLine("}");
+
+            if (workspace.Options.SchemaNamespace != null)
+                builder.Unindent()
+                       .AI().AppendLine("}");
+
+            workspace.WriteToFile("Interfaces/" + paths.Name + ".cs", builder.ToString());
+        }
+
+        public void Finish(Workspace workspace)
+        {
         }
     }
 }

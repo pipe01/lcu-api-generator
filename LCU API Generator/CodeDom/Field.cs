@@ -11,6 +11,6 @@ namespace LCU_API_Generator.CodeDom
             this.Type = type;
         }
 
-        IEnumerable<VariableType> ITypeContainer.GetTypes() => new[] { Type };
+        IEnumerable<VariableType> ITypeContainer.GetTypes() => Type.Yield();
     }
 }

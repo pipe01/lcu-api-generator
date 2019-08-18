@@ -40,6 +40,12 @@ namespace LCU_API_Generator
 
         [JsonProperty("excludeEndpoints")]
         public string[] ExcludeEndpoints { get; set; }
+
+        [JsonProperty("includePlugins")]
+        public string[] IncludePlugins { get; set; }
+        
+        [JsonProperty("excludePlugins")]
+        public string[] ExcludePlugins { get; set; }
         
         [JsonProperty("generateXmlDocs")]
         public bool GenerateXmlDocs { get; set; } = true;

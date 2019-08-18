@@ -45,7 +45,7 @@ namespace LCU_API_Generator.CodeDom
             this.ItemNames = itemNames;
         }
 
-        IEnumerable<VariableType> ITypeContainer.GetTypes() => new[] { ItemsType };
+        IEnumerable<VariableType> ITypeContainer.GetTypes() => ItemsType.Yield();
     }
 
     public sealed class SelfClass : Class

@@ -10,14 +10,16 @@ namespace LCU_API_Generator.CodeDom
         public IDictionary<string, Parameter> Parameters { get; }
         public HttpMethod HttpMethod { get; }
         public VariableType ResponseType { get; }
+        public VariableType RequestType { get; }
 
         internal Method(string name, Documentation documentation, string path, IDictionary<string, Parameter> parameters,
-            HttpMethod httpMethod, VariableType responseType) : base(name, documentation)
+            HttpMethod httpMethod, VariableType responseType, VariableType requestType) : base(name, documentation)
         {
             this.Path = path;
             this.Parameters = parameters;
             this.HttpMethod = httpMethod;
             this.ResponseType = responseType;
+            this.RequestType = requestType;
         }
 
         IEnumerable<VariableType> ITypeContainer.GetTypes() => ResponseType == null

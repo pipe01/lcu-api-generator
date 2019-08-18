@@ -1,7 +1,9 @@
-﻿using LCU_API_Generator.Generator;
+﻿using LCU_API_Generator.CodeDom;
+using LCU_API_Generator.Generator;
 using LCU_API_Generator.Generator.CSharp;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SimpleConsoleColor;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -23,7 +25,7 @@ namespace LCU_API_Generator
             var config = Config.Load(configPath);
             config.Save(configPath);
 
-            if (args.Contains("-client"))
+            if (args.Contains("--client"))
                 config.GetSwaggerFromClient = true;
 
             string swagger = null;
@@ -64,22 +66,44 @@ namespace LCU_API_Generator
             var json = JObject.Parse(swagger);
             var conv = new OpenApiToDom(json);
 
-            var classes = conv.ParseAllSchemas();
-            var paths = conv.ParseAllTags().ToArray();
+            var allClasses = conv.ParseAllSchemas();
+            var allPaths = conv.ParseAllTags().Take(4).ToArray();
+            var usedClasses = new List<Class>();
 
             IGenerator gen = new CSharpGenerator();
-
-            foreach (var cls in classes)
+            var workspace = new Workspace(new GeneratorOptions
             {
-                gen.GenerateSchema(cls.Value, new Workspace(new GeneratorOptions
-                {
-                    SchemaNamespace = "My.Namespace"
-                }, "gen/"));
-            }
+                SchemaNamespace = "My.Namespace"
+            }, "gen/");
 
+            gen.Setup(workspace);
+
+            Console.Write("Generating interfaces: ");
+            ConsoleWriter.SetInitial();
+            foreach (var cls in allPaths)
+            {
+                ConsoleWriter.Write(cls.Name);
+                usedClasses.AddRange(((ITypeContainer)cls).GetTypes().OfType<ClassVariableType>().Select(o => o.Class));
+
+                gen.GenerateInterface(cls, workspace);
+            }
+            ConsoleWriter.Write("Done!");
+            Console.WriteLine();
+
+            Console.Write("Generating models: ");
+            ConsoleWriter.SetInitial();
+            foreach (var cls in usedClasses)
+            {
+                ConsoleWriter.Write(cls.Name);
+
+                gen.GenerateSchema(cls, workspace);
+            }
+            ConsoleWriter.Write("Done!");
+
+            gen.Finish(workspace);
 
             Console.WriteLine();
-            Console.WriteLine("Done!");
+            Console.WriteLine("All done!");
             ReadIfNotCli();
         }
 

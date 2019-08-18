@@ -1,11 +1,12 @@
-﻿using System;
+﻿using LCU_API_Generator.CodeDom;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
 namespace LCU_API_Generator
 {
-    internal static class Extensions
+    public static class Extensions
     {
         private static readonly string[] Keywords = new[]
            {
@@ -65,5 +66,28 @@ namespace LCU_API_Generator
             return name;
         }
 
+        public static void AddIfNotExisting<T>(this IList<T> list, T item)
+        {
+            if (!list.Contains(item))
+                list.Add(item);
+        }
+
+        public static void AddIfClassType(this IList<Class> list, VariableType item)
+        {
+            if (item is ClassVariableType clsType)
+                list.AddIfNotExisting(clsType.Class);
+        }
+
+        /// <summary>
+        /// Wraps this object instance into an IEnumerable&lt;T&gt;
+        /// consisting of a single item.
+        /// </summary>
+        /// <typeparam name="T"> Type of the object. </typeparam>
+        /// <param name="item"> The instance that will be wrapped. </param>
+        /// <returns> An IEnumerable&lt;T&gt; consisting of a single item. </returns>
+        public static IEnumerable<T> Yield<T>(this T item)
+        {
+            yield return item;
+        }
     }
 }

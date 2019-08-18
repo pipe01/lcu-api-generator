@@ -132,7 +132,7 @@ namespace LCU_API_Generator
         #endregion
 
         #region Paths
-        public IEnumerable<Class> ParseAllTags()
+        public IEnumerable<PathsClass> ParseAllTags()
         {
             var parsedTags = new List<string>();
 
@@ -152,7 +152,7 @@ namespace LCU_API_Generator
             }
         }
 
-        public Class ParsePathsUnderTag(string tag)
+        public PathsClass ParsePathsUnderTag(string tag)
         {
             var methods = new List<Method>();
 
@@ -180,7 +180,7 @@ namespace LCU_API_Generator
             var parameters = new Dictionary<string, Parameter>();
             var methodName = json["operationId"].Value<string>();
             var methodDoc = json["summary"] != null ? new Documentation(json["summary"].Value<string>()) : null;
-            VariableType responseType = null;
+            VariableType responseType = null, requestType = null;
 
             foreach (var param in json["parameters"])
             {
@@ -201,7 +201,12 @@ namespace LCU_API_Generator
             if (resp != null)
                 responseType = GetSchemaType(resp, methodName + "Response");
 
-            return new Method(methodName, methodDoc, path, parameters, httpMethod, responseType);
+            var req = json["requestBody"]?["content"]?["application/json"]?["schema"];
+
+            if (req != null)
+                requestType = GetSchemaType(req, methodName + "Request");
+
+            return new Method(methodName, methodDoc, path, parameters, httpMethod, responseType, requestType);
         }
         #endregion
 

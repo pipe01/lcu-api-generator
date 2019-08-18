@@ -16,12 +16,22 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Generator\CSharp\Include.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove=".gitignore" />
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Generator\CSharp\Include.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Humanizer.Core" Version="2.6.2" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
+    <PackageReference Include="Resourcer.Fody" Version="1.7.3" />
+    <PackageReference Include="SimpleConsoleColor" Version="1.0.2" />
   </ItemGroup>
 
 </Project>

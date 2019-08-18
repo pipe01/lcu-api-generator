@@ -12,7 +12,7 @@ namespace LCU_API_Generator.Generator
 
         private static ConditionalWeakTable<StringBuilder, StringBuilderData> DataTable = new ConditionalWeakTable<StringBuilder, StringBuilderData>();
 
-        public static StringBuilder AppendIndentation(this StringBuilder builder)
+        public static StringBuilder AI(this StringBuilder builder)
         {
             return builder.Append(new string(' ', DataTable.GetOrCreateValue(builder).Indentation * 4));
         }
