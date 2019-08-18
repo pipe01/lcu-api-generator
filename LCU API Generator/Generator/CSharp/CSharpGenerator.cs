@@ -135,6 +135,7 @@ namespace LCU_API_Generator.Generator.CSharp
             var builder = new StringBuilder();
 
             builder.AppendLine("using Newtonsoft.Json;")
+                   .AppendLine("using System.Threading.Tasks;")
                    .AppendLine("using static GenerationUtils;")
                    .AppendLine();
 
@@ -165,7 +166,7 @@ namespace LCU_API_Generator.Generator.CSharp
                         builder.AI().AppendLine($"///<param name=\"{paramNames[param.Key]}\">{param.Value.Documentation.Summary}</param>");
                 }
 
-                builder.AI().Append($"public {GetCSType(method.ResponseType)} {method.Name}(");
+                builder.AI().Append($"public Task{(method.ResponseType == null ? "" : $"<{GetCSType(method.ResponseType)}>")} {method.Name}(");
 
                 if (method.RequestType != null)
                 {

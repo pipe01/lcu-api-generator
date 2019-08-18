@@ -25,11 +25,19 @@ namespace LCU_API_Generator
             var config = Config.Load(configPath);
             config.Save(configPath);
 
-            if (config.IncludeEndpoints != null && config.IncludeEndpoints.Length > 0
-             && config.ExcludeEndpoints != null && config.ExcludeEndpoints.Length > 0)
+            if (config.IncludeEndpoints?.Length > 0 && config.ExcludeEndpoints?.Length > 0)
             {
                 using (SimpleConsoleColors.Red)
                     Console.WriteLine("You can't specify IncludeEndpoints and ExcludeEndpoints");
+                PauseIfNotCli();
+
+                return -1;
+            }
+            
+            if (config.IncludePlugins?.Length > 0 && config.ExcludePlugins?.Length > 0)
+            {
+                using (SimpleConsoleColors.Red)
+                    Console.WriteLine("You can't specify IncludePlugins and ExcludePlugins");
                 PauseIfNotCli();
 
                 return -1;
@@ -200,7 +208,7 @@ namespace LCU_API_Generator
             {
                 Console.WriteLine("Make sure the client is running!");
                 PauseIfNotCli();
-                return null;
+                return Task.FromResult<string>(null);
             }
 
             return LCU.GetOpenAPI();

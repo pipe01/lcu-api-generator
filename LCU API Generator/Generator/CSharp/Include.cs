@@ -1,9 +1,7 @@
-﻿using System.Threading.Tasks;
-
-public interface ISender
+﻿public interface ISender
 {
-    Task<T> Request<T>(string method, string path, object body = null);
-    Task Request(string method, string path, object body = null);
+    System.Threading.Tasks.Task<T> Request<T>(string method, string path, object body = null);
+    System.Threading.Tasks.Task Request(string method, string path, object body = null);
 }
 
 internal static class GenerationUtils
